@@ -20,7 +20,7 @@ GitHub: [ajoubertza/pytango-status-updates](https://github.com/ajoubertza/pytang
 
 Slides: [https://ajoubertza.github.io/pytango-status-updates/](https://ajoubertza.github.io/pytango-status-updates/)
 
-.centre[<img src="images/nrf_sarao_meerkat_tango.png" height="200">]
+.centre[<img src="images/nrf_sarao_meerkat_tango.png" height="220">]
 
 ---
 
