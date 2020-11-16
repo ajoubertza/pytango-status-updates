@@ -90,7 +90,7 @@ Upcoming release - 9.3.3
 
 - _WIP:  Fix Windows binary wheels? ([#367](https://github.com/tango-controls/pytango/issues/367))_
 
-- _WIP:  Fix async mode server dynamic attribute is_allowed not called? ([#337](https://github.com/tango-controls/pytango/pull/337))_
+- _WIP:  Fix read/write/is_allowed not called for dynamic attribute in async mode server? ([#337](https://github.com/tango-controls/pytango/pull/337))_
 
 
 ### Features/Changes
@@ -127,9 +127,68 @@ Upcoming release - 9.3.3
 
 ---
 
-### Delayed
+### Not included
 
 - Support forwarded attributes with `TestContext` devices (requires cppTango [#796](https://github.com/tango-controls/cppTango/issues/796)).
+
+### Contributors - thanks!
+
+DrewDevereux, ldoyle, reszelaz, stanislaw55, spirit1317, woutdenolf, wkitka
+
+
+### When can I get it?
+
+- Aiming for December 2020
+
+---
+
+name: issues
+layout: true
+class: middle
+
+Issues
+======
+
+---
+
+### Further investigation required
+
+- DS hangs when concurrently subscribing to events and destructing DeviceProxy ([#315](https://github.com/tango-controls/pytango/issues/315))
+
+- Event-subscribed client segfaults if events cannot reach it ([#371](https://github.com/tango-controls/pytango/issues/371))
+
+- Tango client hangs when it holds stateless event subscription which constantly fails and meanwhile destroys AttributeProxy ([#302](https://github.com/tango-controls/pytango/issues/302))
+
+- Cleanup not performed on SIGINT/SIGTERM if thread is started before call to `tango.server.run` ([#306](https://github.com/tango-controls/pytango/issues/306))
+
+---
+
+name: compatibility
+layout: true
+class: middle
+
+Compatibility Roadmap
+=============
+
+---
+
+### PyTango and cppTango
+
+Currently, match _major.minor_ releases when compiling PyTango binding.
+
+cppTango 9.3.x and 9.4.x not Application Binary Interface (ABI) compatible.
+
+Planned compatibility:
+```
+         cppTango | PyTango | Works?
+        ----------|---------|-------
+            9.3.x |   9.3.x | yes
+            9.3.x |   9.4.x | probably*
+            9.4.x |   9.4.x | yes
+```
+
+_* Tested alpha release of cppTango 9.4.x with PyTango 9.3.x.
+Tests passed, with only change: `libtango.so.9` ->`libtango.so.94`._
 
 ---
 
@@ -153,13 +212,13 @@ pybind11
 ### Functionality
 
 Using new tests with device server running outside test suite:
-- ✅ device_data
+- ✅ device data
 - ✅ commands
 - ✅ database
-- ✅ attribute_proxy
+- ✅ attribute proxy
 - ✅ device proxy
 - ✅ pipes
-- ✅ pipe_events
+- ✅ pipe events
 - ✅ exceptions
 - __ push events
 - __ callbacks
@@ -187,63 +246,6 @@ Most failures due to crash for any use of `DeviceTestContext`.
 
 ---
 
-name: issues
-layout: true
-class: middle
-
-Issues
-======
-
----
-
-### Further investigation required
-
-- DS hangs when concurrently subscribing to events and destructing DeviceProxy ([#315](https://github.com/tango-controls/pytango/issues/315))
-
-- Event-subscribed client segfaults if events cannot reach it ([#371](https://github.com/tango-controls/pytango/issues/371))
-
-- Cleanup not performed on SIGINT/SIGTERM if thread is started before call to `tango.server.run` ([#306](https://github.com/tango-controls/pytango/issues/306))
-
-- Tango client hangs when it holds stateless event subscription which constantly fails and meanwhile destroys AttributeProxy ([#302](https://github.com/tango-controls/pytango/issues/302))
-
----
-
-name: compatibility
-layout: true
-class: middle
-
-Compatibility Roadmap
-=============
-
----
-
-### PyTango and cppTango
-
-Currently, match _major.minor_ releases when compiling extension code.
-
-cppTango 9.3.x and 9.4.x not Application Binary Interface (ABI) compatible.
-
-After cppTango 9.4.0:
-- PyTango 9.3.x releases stop.
-- PyTango 9.4.x releases start.
-
-Planned compatibility:
-```
-         cppTango | PyTango | Works?
-        ----------|---------|-------
-            9.3.4 |   9.3.2 | yes
-            9.3.4 |   9.4.0 | probably*
-            9.4.0 |   9.4.0 | yes
-            9.4.1 |   9.4.0 | yes
-```
-
-
-
-_* Tested alpha release of cppTango 9.4.x with PyTango 9.3.x.
-Tests passed, with only change `libtango.so.9` ->`libtango.so.94`._
-
----
-
 name: development
 layout: true
 class: middle
@@ -259,11 +261,11 @@ PyTango development
 
 - Docs: [pytango.readthedocs.io](https://pytango.readthedocs.io)
 
-- Continuous Integration:  TravisCI, using Conda.
+- Continuous Integration:  TravisCI (Conda on Ubuntu VM).
 
-- Windows packages:  AppVeyor (TODO: dedicated `tango-controls` user)
+- Windows packages:  AppVeyor
 
-- Anyone want to use GitHub Actions instead?
+- Anyone want to migrate us to GitHub Actions instead?
 
 ### Issues
 
@@ -295,4 +297,5 @@ GitHub: [ajoubertza/pytango-status-updates](https://github.com/ajoubertza/pytang
 
 Slides: [https://ajoubertza.github.io/pytango-status-updates/](https://ajoubertza.github.io/pytango-status-updates/)
 
+.centre[<img src="images/tango_controls_logo.png" height="120">]
 ---
