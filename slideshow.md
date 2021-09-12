@@ -8,11 +8,11 @@ class: center, middle
 PyTango Status Report 
 =====================
 
-[Anton Joubert](https://github.com/ajoubertza) ([SARAO](https://sarao.ac.za))
+[Anton Joubert](https://gitlab.com/ajoubertza) ([SARAO](https://sarao.ac.za))
 
-Tango 2020 November status update meeting
+35th Tango Community Meeting
 
-Tuesday, 17 November 2020
+Tuesday, 14 September 2021
 
 *
 
@@ -37,13 +37,13 @@ PyTango?  Quick reminder
 
 - Binding over the C++ Tango library
 
-- ... using boost-python (future:  pybind11)
+- ... using boost-python (future:  pybind11?)
 
 - Relies on numpy
 
-- Multi OS: Linux, Windows, Mac (with Docker...)
+- Multi OS: Linux, Windows, MacOS (sort-of)
 
-- Works on Python 2.7, 3.5, 3.6, 3.7, 3.8, (probably 3.9)
+- Works on Python 2.7, 3.5 to 3.8, (probably 3.9, 3.10?)
 
 .center[<img src="images/pytango_sw_stack.png" width="400">]
 
@@ -53,23 +53,25 @@ name: releases
 layout: true
 class: middle
 
-Current release - 9.3.2
+Current release - 9.3.3
 ==============
 
 ---
 
-###  May 2020
+###  December 2020
 
-- `MultiDeviceTestContext`
+- Fixed Windows binary wheels, and CI now tests on Windows.
 
-- `EnsureOmniThread`
+- Bugs and memory leak fixes
+
+- Documentation and testing improvements
 
 - Packages:
   - Source on PyPI (works for Linux)
   
-  - Windows wheels on PyPI:  9.3.2 broken! (use 9.3.1)
+  - Windows binary wheels on PyPI (includes cppTango 9.3.4)
   
-  - Conda Linux binary (pytango on `tango-controls` channel)
+  - Conda Linux binary (pytango on `conda-forge` channel - not `tango-controls`)
 
 ---
 
@@ -77,89 +79,143 @@ name: upcoming
 layout: true
 class: middle
 
-Upcoming release - 9.3.3
+Upcoming release - 9.3.4
 ========================
 
 ---
 
 ### Bugfixes
 
-- Fix convert2array for Unicode to DevVarStringArray (Py3) ([#360](https://github.com/tango-controls/pytango/pull/360))
 
-- Fix DeviceProxy repr/str memory leak ([#386](https://github.com/tango-controls/pytango/pull/386))
+- Fix DeviceProxy constructor reference cycle ([!417](https://gitlab.com/tango-controls/pytango/-/merge_requests/417))
 
-- _WIP:  Fix Windows binary wheels? ([#367](https://github.com/tango-controls/pytango/issues/367))_
+- tango/pytango_pprint.py: Use correct syntax for comparing object contents ([!424](https://gitlab.com/tango-controls/pytango/-/merge_requests/424))
 
-- _WIP:  Fix read/write/is_allowed not called for dynamic attribute in async mode server? ([#337](https://github.com/tango-controls/pytango/pull/337))_
+- _WIP: DS hangs when concurrently subscribing to events and destructing DeviceProxy ([#315](https://gitlab.com/tango-controls/pytango/-/issues/315)).
+  Fixed in: Release GIL in DeviceProxy dtor ([!418](https://gitlab.com/tango-controls/pytango/-/merge_requests/418))_
 
+---
 
 ### Features/Changes
 
-- Preserve cause of exception when getting/setting attribute in DeviceProxy ([#365](https://github.com/tango-controls/pytango/pull/365))
+- Raise when setting non-existent DeviceProxy attr ([!430](https://gitlab.com/tango-controls/pytango/-/merge_requests/430))
 
-- Improve mandatory + default device property error message ([#385](https://github.com/tango-controls/pytango/pull/385))
+```python
+>>> proxy = tango.DeviceProxy("test/my/clock")
+>>> proxy.get_attribute_list()
+['time', 'gmtime', 'noon', 'display', 'State', 'Status']
+
+>>> proxy.display_mode = "DIGITAL"
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+  File "/opt/conda/envs/env-py3.8-tango9.3.4/lib/python3.8/site-packages/tango/device_proxy.py", line 418, in __DeviceProxy__setattr
+    six.raise_from(e, cause)
+  File "<string>", line 3, in raise_from
+  File "/opt/conda/envs/env-py3.8-tango9.3.4/lib/python3.8/site-packages/tango/device_proxy.py", line 413, in __DeviceProxy__setattr
+    raise AttributeError(
+AttributeError: Tried to set non-existent attr 'display_mode' to 'DIGITAL'
+```
 
 ---
 
 ### CI improvements
 
-- CI includes Python 3.8 ([#344](https://github.com/tango-controls/pytango/pull/344))
+- Enable CI/CD in Gitlab ([!409](https://gitlab.com/tango-controls/pytango/-/merge_requests/409))
 
-- CI updated cppTango version 9.3.4rc6 => 9.3.4 ([#389](https://github.com/tango-controls/pytango/pull/389))
-
-- CI under Windows and dev containers updated to boost 1.73.0 ([#376](https://github.com/tango-controls/pytango/pull/376))
-
-- _WIP:  CI runs test suite on Windows - ([#369](https://github.com/tango-controls/pytango/issues/369))_
-
----
+- Build and upload source distribution to pypi ([!411](https://gitlab.com/tango-controls/pytango/-/merge_requests/411))
 
 ### Development/Testing improvements
 
-- VScode remote development container support ([#377](https://github.com/tango-controls/pytango/pull/377))
-
-- Add string support for MultiDeviceTestContext `devices_info` class field ([#378](https://github.com/tango-controls/pytango/pull/378))
-
-- Add test context support for memorized attributes ([#384](https://github.com/tango-controls/pytango/pull/384))
-
-- _WIP:  Enable short-name access to `TestContext` devices ([#388](https://github.com/tango-controls/pytango/pull/388))_
-
-  _(was "`DeviceProxy` support for `TANGO_HOST` with `#dbase=no`", but no longer using `TANGO_HOST` variable)_
+- _WIP:  Enable short-name access to `TestContext` devices ([!388](https://gitlab.com/tango-controls/pytango/-/merge_requests/388))_
 
 ---
 
-### Not included
+### Documentation improvements
 
-- Support forwarded attributes with `TestContext` devices (requires cppTango [#796](https://github.com/tango-controls/cppTango/issues/796)).
+- Fix docs - missing `DbDevExportInfos` and `DbDevImportInfos` ([!406](https://gitlab.com/tango-controls/pytango/-/merge_requests/406))
+
+- Typo on Sphinx documentation ([!404](https://gitlab.com/tango-controls/pytango/-/merge_requests/404))
+
+- Replace github links ([!410](https://gitlab.com/tango-controls/pytango/-/merge_requests/410))
+
+- Fix broken link: no `s` in `gevent` ([!420](https://gitlab.com/tango-controls/pytango/-/merge_requests/420))
+
+- Uncomment docs of `tango.Util.instance()` and build docs for other static methods ([!422](https://gitlab.com/tango-controls/pytango/-/merge_requests/422))
+
+- Fixed arguments name when calling command decorator ([!426](https://gitlab.com/tango-controls/pytango/-/merge_requests/426))
+
+- Fixed variables name in a `tango.Database.add_server` method example ([!427](https://gitlab.com/tango-controls/pytango/-/merge_requests/427))
+
+- Add training material examples ([!429](https://gitlab.com/tango-controls/pytango/-/merge_requests/429))
+
+---
+
+### Build improvements
+
+- Fix deprecated warning with numpy 1.20 ([!414](https://gitlab.com/tango-controls/pytango/-/merge_requests/414))
+
+- Use numpy parallel compilation if available ([!423](https://gitlab.com/tango-controls/pytango/-/merge_requests/423))
+
+- Fix some and silence some C++ compiler warnings ([!425](https://gitlab.com/tango-controls/pytango/-/merge_requests/425))
+
+---
 
 ### Contributors - thanks!
 
-DrewDevereux, ldoyle, reszelaz, stanislaw55, spirit1317, woutdenolf, wkitka
-
+vallsv, catunlock, beenje, matcelary, untzag, reszelaz, t-b, marc2332
 
 ### When can I get it?
 
-- Aiming for December 2020
+- Before the end of 2021.  Hopefully sooner.  Needs ([!418](https://gitlab.com/tango-controls/pytango/-/merge_requests/418)) to be completed.  
 
 ---
-
-name: issues
+name: Future
 layout: true
 class: middle
 
-Issues
+Breaking change to fix things?
 ======
 
 ---
+- Read/writing empty list produces `None` for spectrum and image attributes ([#229](https://gitlab.com/tango-controls/pytango/-/issues/229), [#230](https://gitlab.com/tango-controls/pytango/-/issues/230) from 2018)
 
-### Further investigation required
+```python
+class Test(Device):
 
-- DS hangs when concurrently subscribing to events and destructing DeviceProxy ([#315](https://github.com/tango-controls/pytango/issues/315))
+    @attribute(dtype=(int,), max_dim_x=10, access=AttrWriteType.READ)
+    def test_read_only(self):
+        return []
 
-- Event-subscribed client segfaults if events cannot reach it ([#371](https://github.com/tango-controls/pytango/issues/371))
+    value = []
+    
+    @attribute(dtype=(int,), max_dim_x=10, access=AttrWriteType.READ_WRITE)
+    def test_read_write(self):
+        return self.value
 
-- Tango client hangs when it holds stateless event subscription which constantly fails and meanwhile destroys AttributeProxy ([#302](https://github.com/tango-controls/pytango/issues/302))
+    @test_read_write.write
+    def test_read_write(self, value):
+        self.value = value
+```
 
-- Cleanup not performed on SIGINT/SIGTERM if thread is started before call to `tango.server.run` ([#306](https://github.com/tango-controls/pytango/issues/306))
+```python
+In [1]: d = Device('my/test/device')
+In [2]: str(d.test_read_only)
+Out[2]: 'None'  # but want it to be '[]'
+In [3]: str(d.test_read_write)
+Out[3]: '[]'
+In [4]: d.test_read_write = []
+In [5]: str(d.test_read_write)
+Out[5]: 'None'  # but want it to be '[]'
+```
+
+---
+
+### Poll
+
+1. Yes, please fix it in 9.3.x!
+2. Yes, please fix it, but only in 9.4.x.
+3. No, don't fix it.  I depend on this, and can't update my code.
+4. I'm happy with anything.
 
 ---
 
@@ -183,12 +239,21 @@ Planned compatibility:
          cppTango | PyTango | Works?
         ----------|---------|-------
             9.3.x |   9.3.x | yes
-            9.3.x |   9.4.x | probably*
+            9.3.x |   9.4.x | maybe*
             9.4.x |   9.4.x | yes
 ```
 
 _* Tested alpha release of cppTango 9.4.x with PyTango 9.3.x.
 Tests passed, with only change: `libtango.so.9` ->`libtango.so.94`._
+
+---
+
+### Poll
+
+1. I'm happy if PyTango 9.4.x only supports cppTango 9.4.x.
+2. It would be nice if PyTango 9.4.x supports cppTango 9.3.x and 9.4.x.
+3. I absolutely need PyTango 9.4.x to support cppTango 9.3.x and 9.4.x.
+5. I'm happy with anything.
 
 ---
 
@@ -203,46 +268,13 @@ pybind11
 
 ### Current status
 
-- Code is on pytango [pybind11](https://github.com/tango-controls/pytango/tree/pybind11) branch.
+- No progress since last year, and no plans to work on it in the short term.
 
-- pybind11 branch and develop (main) branch have diverged significantly.  Need to merge in, or rebase on, develop.
+- Boost.Python is still actively maintained, and libboost is still included in new Linux distributions (e.g., 1.74 in Debian bullseye).
 
----
+- Code is on pytango [pybind11](https://gitlab.com/tango-controls/pytango/-/tree/pybind11) branch.
 
-### Functionality
-
-Using new tests with device server running outside test suite:
-- ✅ device data
-- ✅ commands
-- ✅ database
-- ✅ attribute proxy
-- ✅ device proxy
-- ✅ pipes
-- ✅ pipe events
-- ✅ exceptions
-- __ push events
-- __ callbacks
-- __ forward attributes
-- __ groups
-- __ enums
-
----
-
-### PyTango standard test suite
-
-Results:
-
-```
-            Type of tests | # Failed | # Passed
-            --------------|----------|---------
-            Client        |       56 |     588 
-            Server        |      222 |       4 
-            Events        |       20 |       0 
-            Async         |       21 |       0 
-            Test Context  |       30 |       6 
-```
-
-Most failures due to crash for any use of `DeviceTestContext`.
+- See previous [status report](https://github.com/ajoubertza/pytango-status-updates/blob/2020-11/slideshow.md#pybind11).
 
 ---
 
@@ -257,21 +289,31 @@ PyTango development
 
 ### Hosting
 
-- Repo: [github.com/tango-controls/pytango](https://github.com/tango-controls/pytango)
+- Repo: [gitlab.com/tango-controls/pytango](https://gitlab.com/tango-controls/pytango)
 
 - Docs: [pytango.readthedocs.io](https://pytango.readthedocs.io)
 
-- Continuous Integration:  TravisCI (Conda on Ubuntu VM).
+- Continuous Integration:  GitLab CI (Miniconda Docker container), AppVeyor
 
 - Windows packages:  AppVeyor
 
-- Anyone want to migrate us to GitHub Actions instead?
-
 ### Issues
 
-- Specific issues:  report on [GitHub](https://github.com/tango-controls/pytango/issues) - the more detail the better
-
 - Questions:  use the [TANGO Forum](https://www.tango-controls.org/community/forum/c/development/python)
+
+- Specific issues:  report on [GitLab](https://gitlab.com/tango-controls/pytango/-/issues) - the more detail the better
+
+---
+
+### Priority
+
+New approach being trialled.
+
+- Issue priority now indicated via `weight` field.  1 is highest.
+
+- To request changes to priority, contact your Tango steering committee representative or a kernel developer.
+
+.centre[<img src="images/issues_20210910.png" height="350">]
 
 ---
 
@@ -281,9 +323,10 @@ PyTango development
 
 - Typical branched Git workflow.  Main branch is `develop`
 
-- Fork the repo, make it better, make a PR.  Thanks!
+- Fork the repo, make it better, make an MR.  Thanks!
 
-- More info in [how-to-contribute](https://pytango.readthedocs.io/en/latest/how-to-contribute.html).
+- More info in [how-to-contribute](https://pytango.readthedocs.io/en/latest/how-to-contribute.html),
+  and the recent [webinar](https://www.tango-controls.org/community/news/2021/06/10/4th-tango-kernel-webinar-pytango/)
 
 ---
 name:  done
