@@ -8,11 +8,13 @@ class: center, middle
 PyTango Status Report 
 =====================
 
-[Anton Joubert](https://gitlab.com/ajoubertza) ([SARAO](https://sarao.ac.za))
+[Anton Joubert](https://gitlab.com/ajoubertza) ([MAX IV](https://www.maxiv.lu.se))
 
-35th Tango Community Meeting
+36th Tango Community Meeting
 
-Tuesday, 14 September 2021
+29-30 June 2022
+
+Lund, Sweden
 
 *
 
@@ -20,13 +22,26 @@ GitHub: [ajoubertza/pytango-status-updates](https://github.com/ajoubertza/pytang
 
 Slides: [https://ajoubertza.github.io/pytango-status-updates/](https://ajoubertza.github.io/pytango-status-updates/)
 
-.centre[<img src="images/nrf_sarao_meerkat_tango.png" height="220">]
+.centre[<img src="images/maxiv_tango.png" height="160">]
+
+
+---
+name: team
+layout: true
+
+New PyTango team member
+=======================
 
 ---
 
+Welcome to our new team member from DESY!
+
+
+.center[<img src="images/yury_gitlab.png" width="300">]
+
+---
 name: presentation
 layout: true
-class: middle
 
 PyTango?  Quick reminder
 ========================
@@ -37,13 +52,13 @@ PyTango?  Quick reminder
 
 - Binding over the C++ Tango library
 
-- ... using boost-python (future:  pybind11?)
+- ... using boost-python
 
 - Relies on numpy
 
 - Multi OS: Linux, Windows, MacOS (sort-of)
 
-- Works on Python 2.7, 3.5 to 3.8, (probably 3.9, 3.10?)
+- Works on Python 2.7, 3.5 to 3.10
 
 .center[<img src="images/pytango_sw_stack.png" width="400">]
 
@@ -51,48 +66,28 @@ PyTango?  Quick reminder
 
 name: releases
 layout: true
-class: middle
 
-Current release - 9.3.3
+---
+Current release - 9.3.4
 ==============
 
----
+###  June 2022
 
-###  December 2020
-
-- Fixed Windows binary wheels, and CI now tests on Windows.
-
-- Bugs and memory leak fixes
-
+- Usability improvements
+- Bugs, memory leak and deadlock fixes
 - Documentation and testing improvements
-
+- 34 MRs in total - https://gitlab.com/tango-controls/pytango/-/releases/v9.3.4
 - Packages:
-  - Source on PyPI (works for Linux)
+  - Source on PyPI
   
-  - Windows binary wheels on PyPI (includes cppTango 9.3.4)
-  
-  - Conda Linux binary (pytango on `conda-forge` channel - not `tango-controls`)
+  - Windows binary wheels on PyPI
+      - Python 2.7, 3.6, 3.7, 3.8 (32-bit + 64-bit)
+      - cppTango 9.3.4
 
----
-
-name: upcoming
-layout: true
-class: middle
-
-Upcoming release - 9.3.4
-========================
-
----
-
-### Bugfixes
-
-
-- Fix DeviceProxy constructor reference cycle ([!417](https://gitlab.com/tango-controls/pytango/-/merge_requests/417))
-
-- tango/pytango_pprint.py: Use correct syntax for comparing object contents ([!424](https://gitlab.com/tango-controls/pytango/-/merge_requests/424))
-
-- _WIP: DS hangs when concurrently subscribing to events and destructing DeviceProxy ([#315](https://gitlab.com/tango-controls/pytango/-/issues/315)).
-  Fixed in: Release GIL in DeviceProxy dtor ([!418](https://gitlab.com/tango-controls/pytango/-/merge_requests/418))_
+  - Conda binary (`pytango` on `conda-forge` channel)
+      - Python 3.7, 3.8, 3.9 and 3.10
+      - Linux (x86_64) and Windows (64-bit)
+      - cppTango 9.3.5
 
 ---
 
@@ -117,76 +112,121 @@ AttributeError: Tried to set non-existent attr 'display_mode' to 'DIGITAL'
 ```
 
 ---
+### Features/Changes
 
-### CI improvements
+- Add “friendly” argparser for device server arguments ([!444](https://gitlab.com/tango-controls/pytango/-/merge_requests/444))
 
-- Enable CI/CD in Gitlab ([!409](https://gitlab.com/tango-controls/pytango/-/merge_requests/409))
+Before:
+```
+user@host:/pytango/examples/Clock# python ClockDS.py --help
+usage :  Clock instance_name [-v[trace level]] [-file=<file_name> | -nodb [-dlist <device name list>] ]
+```
 
-- Build and upload source distribution to pypi ([!411](https://gitlab.com/tango-controls/pytango/-/merge_requests/411))
+After:
+```
+user@host:/pytango/examples/Clock# python ClockDS.py --help
+usage: Clock instance_name [-v[trace level]] [-host] [-port] [-file=<file_name> | -nodb [-dlist]]
 
-### Development/Testing improvements
-
-- _WIP:  Enable short-name access to `TestContext` devices ([!388](https://gitlab.com/tango-controls/pytango/-/merge_requests/388))_
-
----
-
-### Documentation improvements
-
-- Fix docs - missing `DbDevExportInfos` and `DbDevImportInfos` ([!406](https://gitlab.com/tango-controls/pytango/-/merge_requests/406))
-
-- Typo on Sphinx documentation ([!404](https://gitlab.com/tango-controls/pytango/-/merge_requests/404))
-
-- Replace github links ([!410](https://gitlab.com/tango-controls/pytango/-/merge_requests/410))
-
-- Fix broken link: no `s` in `gevent` ([!420](https://gitlab.com/tango-controls/pytango/-/merge_requests/420))
-
-- Uncomment docs of `tango.Util.instance()` and build docs for other static methods ([!422](https://gitlab.com/tango-controls/pytango/-/merge_requests/422))
-
-- Fixed arguments name when calling command decorator ([!426](https://gitlab.com/tango-controls/pytango/-/merge_requests/426))
-
-- Fixed variables name in a `tango.Database.add_server` method example ([!427](https://gitlab.com/tango-controls/pytango/-/merge_requests/427))
-
-- Add training material examples ([!429](https://gitlab.com/tango-controls/pytango/-/merge_requests/429))
+...
+```
 
 ---
+After:
+```
+user@host:/pytango/examples/Clock# python ClockDS.py --help
+usage: Clock instance_name [-v[trace level]] [-host] [-port] [-file=<file_name> | -nodb [-dlist]]
 
-### Build improvements
+Instance names defined in database for server Clock:
+	bar
+	foo
+	test
 
-- Fix deprecated warning with numpy 1.20 ([!414](https://gitlab.com/tango-controls/pytango/-/merge_requests/414))
+positional arguments:
+  instance_name         Device server instance name
 
-- Use numpy parallel compilation if available ([!423](https://gitlab.com/tango-controls/pytango/-/merge_requests/423))
+optional arguments:
+  -h, -?, --help        show this help message and exit
+  -v, --verbose         set the trace level. Can be used in count way: -vv or
+                        --verbose --verbose
+  -vLEVEL               directly set the trace level to LEVEL
+  -file FILE_PATH, --file FILE_PATH
+                        start device server using an ASCII file instead of the
+                        Tango database
+  -host HOST, --host HOST
+                        Force the host from which server accepts requests
+                        (alternatively use ORBendPoint option)
+  -port PORT, --port PORT
+                        Force the port on which the device server listens
+                        (alternatively use ORBendPoint option)
 
-- Fix some and silence some C++ compiler warnings ([!425](https://gitlab.com/tango-controls/pytango/-/merge_requests/425))
+Run device server without database:
+  -nodb, --nodb         run server without DB
+  -dlist DEV1,DEV2,etc, --dlist DEV1,DEV2,etc
+                        The device name list. This option is supported only
+                        with the -nodb option.
 
+ORB options (started with -ORBxxx):options directly passed to the underlying ORB. Should be rarely used:
+  -ORBendPoint giop:tcp:<host>:<port>, --ORBendPoint giop:tcp:<host>:<port>
+                        Specifying the host from which server accept requests
+                        and port on which the device server listens.
+  -ORB<any_another_option> giop:tcp:<host>:<port>, --ORB<any_another_option> giop:tcp:<host>:<port>
+                        Any another ORB option
+```
+
+---
+### Bug fixes
+
+- Fix read/write/is_allowed not called for dynamic attribute in async mode server ([!401](https://gitlab.com/tango-controls/pytango/-/merge_requests/401))
+
+- Fix Device green_mode usage in MultiDeviceTestContext ([!434](https://gitlab.com/tango-controls/pytango/-/merge_requests/434))
+
+- Fix DeviceProxy constructor reference cycle ([!417](https://gitlab.com/tango-controls/pytango/-/merge_requests/417))
+
+- Release GIL in DeviceProxy and AttributeProxy dtor ([!418](https://gitlab.com/tango-controls/pytango/-/merge_requests/418))
+
+- Allow pipes to be inherited by Device subclasses ([!446](https://gitlab.com/tango-controls/pytango/-/merge_requests/446))
 ---
 
 ### Contributors - thanks!
 
-vallsv, catunlock, beenje, matcelary, untzag, reszelaz, t-b, marc2332
-
-### When can I get it?
-
-- Before the end of 2021.  Hopefully sooner.  Needs ([!418](https://gitlab.com/tango-controls/pytango/-/merge_requests/418)) to be completed.  
-
+Alberto López Sánchez, Alejandro Homs Puron, Antonio Bartalesi, Benjamin Bertrand, Blaise Thompson, 
+Dantali0n, Emilio Morales, Gavin Burnell, Marc Espín, Mateusz Celary, Yury Matveyev, Stanislaw Cabala,
+Thomas Braun, Valentin Valls, Zbigniew Reszela
 ---
-name: Future
+name: upcoming
 layout: true
-class: middle
 
-Breaking change to fix things?
-======
+Upcoming release - 9.4.0
+========================
 
 ---
+
+### Changes
+
+- Drop support for cppTango 9.3.x and add support for cppTango 9.4.x
+
+- C++14 compiler required (for source distribution)
+
+- Drop support for Python 2.7 and 3.5
+
+- Breaking change for spectrum and image attributes
+
+- Require numpy
+
+- Aim for release in November 2022 - closely following cppTango 9.4.0 release
+
+---
+### Breaking change to attributes
+
 - Read/writing empty list produces `None` for spectrum and image attributes ([#229](https://gitlab.com/tango-controls/pytango/-/issues/229), [#230](https://gitlab.com/tango-controls/pytango/-/issues/230) from 2018)
 
 ```python
 class Test(Device):
+    value = []
 
     @attribute(dtype=(int,), max_dim_x=10, access=AttrWriteType.READ)
     def test_read_only(self):
         return []
-
-    value = []
     
     @attribute(dtype=(int,), max_dim_x=10, access=AttrWriteType.READ_WRITE)
     def test_read_write(self):
@@ -200,87 +240,84 @@ class Test(Device):
 ```python
 In [1]: d = Device('my/test/device')
 In [2]: str(d.test_read_only)
-Out[2]: 'None'  # but want it to be '[]'
+Out[2]: 'None'  # but changing it to be '[]'
 In [3]: str(d.test_read_write)
 Out[3]: '[]'
 In [4]: d.test_read_write = []
 In [5]: str(d.test_read_write)
-Out[5]: 'None'  # but want it to be '[]'
+Out[5]: 'None'  # but changing it to be '[]'
 ```
 
 ---
 
-### Poll
+name: platforms
+layout: true
 
-1. Yes, please fix it in 9.3.x!
-2. Yes, please fix it, but only in 9.4.x.
-3. No, don't fix it.  I depend on this, and can't update my code.
-4. I'm happy with anything.
+Platform Survey
+=============
+
+---
+
+Which platforms do you use PyTango on? [28 responses]
+
+.centre[<img src="images/survey_platforms_used.png" height="400">]
+---
+
+Which platforms would you like PyTango binary wheels for? [28 responses]
+
+.centre[<img src="images/survey_platforms_binary_wheels.png" height="400">]
+
+---
+
+Are you interested in musl libc support (used in Alpine Docker images instead of libc) [27 responses]
+
+.centre[<img src="images/survey_musl_support.png" height="300">]
+
+---
+### Binary wheels on PyPI?
+
+Initial goal:
+
+.centre[<img src="images/binary_wheels_planned.png" height="200">]
+
+ABI for Python 3.7: `m`
+
+Skipping Python 3.6, end-of-life was 2021-12-23.
+
+If MacOS works, include Intel and Apple Silicon, from Python 3.8.
+
+musl libc - maybe later.
 
 ---
 
 name: compatibility
 layout: true
-class: middle
 
-Compatibility Roadmap
+Python version policy
 =============
 
 ---
 
-### PyTango and cppTango
+Python 3.x is moving quickly, when do we drop support for old versions?  Examples:
 
-Currently, match _major.minor_ releases when compiling PyTango binding.
+- Numpy uses [NEP-29](https://numpy.org/neps/nep-0029-deprecation_policy.html)
+- Scikit-HEP (high energy physics) [statement](https://scikit-hep.org/supported-python-versions) 
+- Python version in current and previous Debian and Red Hat releases
 
-cppTango 9.3.x and 9.4.x not Application Binary Interface (ABI) compatible.
+.centre[<img src="images/python_history.png" height="400">]
 
-Planned compatibility:
-```
-         cppTango | PyTango | Works?
-        ----------|---------|-------
-            9.3.x |   9.3.x | yes
-            9.3.x |   9.4.x | maybe*
-            9.4.x |   9.4.x | yes
-```
+[//]: # (https://en.wikipedia.org/wiki/Red_Hat_Enterprise_Linux#Product_life_cycle)
 
-_* Tested alpha release of cppTango 9.4.x with PyTango 9.3.x.
-Tests passed, with only change: `libtango.so.9` ->`libtango.so.94`._
+[//]: # (https://en.wikipedia.org/wiki/CentOS)
 
----
+[//]: # (https://en.wikipedia.org/wiki/Debian_version_history)
 
-### Poll
-
-1. I'm happy if PyTango 9.4.x only supports cppTango 9.4.x.
-2. It would be nice if PyTango 9.4.x supports cppTango 9.3.x and 9.4.x.
-3. I absolutely need PyTango 9.4.x to support cppTango 9.3.x and 9.4.x.
-5. I'm happy with anything.
-
----
-
-name: pybind11
-layout: true
-class: middle
-
-pybind11
-======
-
----
-
-### Current status
-
-- No progress since last year, and no plans to work on it in the short term.
-
-- Boost.Python is still actively maintained, and libboost is still included in new Linux distributions (e.g., 1.74 in Debian bullseye).
-
-- Code is on pytango [pybind11](https://gitlab.com/tango-controls/pytango/-/tree/pybind11) branch.
-
-- See previous [status report](https://github.com/ajoubertza/pytango-status-updates/blob/2020-11/slideshow.md#pybind11).
+[//]: # (https://wiki.debian.org/Python)
 
 ---
 
 name: development
 layout: true
-class: middle
 
 PyTango development
 ===================
@@ -305,28 +342,16 @@ PyTango development
 
 ---
 
-### Priority
-
-New approach being trialled.
-
-- Issue priority now indicated via `weight` field.  1 is highest.
-
-- To request changes to priority, contact your Tango steering committee representative or a kernel developer.
-
-.centre[<img src="images/issues_20210910.png" height="350">]
-
----
-
 ### Contributing
 
 - Please join in!
 
-- Typical branched Git workflow.  Main branch is `develop`
+- Typical branched Git workflow.  Main branch is `develop` (may change to `main` in future)
 
 - Fork the repo, make it better, make an MR.  Thanks!
 
 - More info in [how-to-contribute](https://pytango.readthedocs.io/en/latest/how-to-contribute.html),
-  and the recent [webinar](https://www.tango-controls.org/community/news/2021/06/10/4th-tango-kernel-webinar-pytango/)
+  and the not so recent [webinar](https://www.tango-controls.org/community/news/2021/06/10/4th-tango-kernel-webinar-pytango/)
 
 ---
 name:  done
@@ -341,4 +366,5 @@ GitHub: [ajoubertza/pytango-status-updates](https://github.com/ajoubertza/pytang
 Slides: [https://ajoubertza.github.io/pytango-status-updates/](https://ajoubertza.github.io/pytango-status-updates/)
 
 .centre[<img src="images/tango_controls_logo.png" height="120">]
+
 ---
