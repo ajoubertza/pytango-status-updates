@@ -36,8 +36,9 @@ New PyTango team member
 
 Welcome to our new team member from DESY!
 
+.center[<img src="images/ulrik_gitlab.png" width="300">]
 
-.center[<img src="images/yury_gitlab.png" width="300">]
+.center[<img src="images/jose_gitlab.png" width="300">]
 
 ---
 name: presentation
@@ -68,185 +69,277 @@ name: releases
 layout: true
 
 ---
-Current release - 9.3.4
+Current release - 9.4.1
 ==============
 
-###  June 2022
+###  March 2022
 
-- Usability improvements
-- Bugs, memory leak and deadlock fixes
-- Documentation and testing improvements
-- 34 MRs in total - https://gitlab.com/tango-controls/pytango/-/releases/v9.3.4
+#### "Emergency" release to fix breaking change in 9.4.0:
+- Regression for undecorated read attribute accessor functions in derived device classes
+- Regression when applying additional decorators on attribute accessor functions
+
+- Now all method's signatures should be the same for bounded and non-bounded methods:
+
+  - static attributes:
+   
+  read_attribute(device_instance)
+
+  write_attribute(device_instance, value)
+
+  - dynamic attributes:
+  
+  read_attribute(device_instance, attribute)
+
+  write_attribute(device_instance, attribute)
+
+### DevOps Changes
+
+- Run black on repo and add to pre-commit-config
+  
+  Python code formatter
+
+---
+Previous release - 9.4.0
+==============
+
+###  February 2022
+
+#### Now mark as "stale". Major release with API breaking changes.
+
+- Python 3.11 support.
+- Support for Python 2 and Python 3.5 was removed
+- PyTango requires at least cppTango 9.4.1
+- Python dependencies:  numpy is no longer optional - it is required.
+- MacOS support
+
+### Bug fixes
+- Breaking change to the API when using empty spectrum and image attributes. 
+
+  Clients reading an empty
+  attribute will get an empty sequence (list/tuple/numpy array) instead of a `None` value.  Similarly,
+  devices that have an empty sequence written will receive that in the write method instead of a `None`
+  value.
+
+- Keep value and w_value separate
+
+  Prior to 9.4.x, the data in the tango.DeviceAttribute value and w_value fields would be concatenated (respectively) 
+  and returned in the value field. For a read-only attributes this was reasonable, but not for read-write attributes.
+
+- Writing a `numpy.array` to a spectrum attribute of type `str` no longer crashes.
+- Reading an enum attribute with `AttrQuality.ATTR_INVALID` quality via the high-level API now returns `None` instead of crashing.
+
+- High-level API support for DevEnum spectrum and image attributes
+  
+- Broken logging with “%” fixed
+
+---
+
+### Features/Changes
+
+- Added fisallowed kwarg for static/dynamic commands and is_allowed method for dynamic commands
+
+  ```python
+    class TestDevice(Device):
+
+        def __init__(self, *args, **kwargs):
+            super(TestDevice, self).__init__(*args, **kwargs)
+            self._is_allowed = True
+
+        @command(dtype_in=int, dtype_out=int)
+        def identity(self, arg):
+            return arg
+
+
+        @command(dtype_in=int, dtype_out=int, fisallowed="is_identity_allowed")
+        def identity_kwarg_string(self, arg):
+            return arg
+
+        def is_identity_allowed(self):
+                return self._is_allowed
+  ```
+  
+  ```python
+    def non_bound_sync_allowed():
+        return is_allowed
+      
+    class TestDevice(Device):
+        
+        @command(dtype_in=int, dtype_out=int, fisallowed=non_bound_sync_allowed)
+        def identity_kwarg_callable(self, arg):
+            return arg
+  ```  
+
+  ```python
+    class IsAllowedCallableClass:
+
+        def __init__(self):
+            self._is_allowed = None
+
+        def __call__(self, device):
+            return self._is_allowed
+
+        def make_allowed(self, yesno):
+            self._is_allowed = yesno
+
+    is_allowed_callable_class = IsAllowedCallableClass()
+      
+    class TestDevice(Device):
+        
+        @command(dtype_in=int, dtype_out=int, fisallowed=is_allowed_callable_class)
+        def identity_kwarg_callable_class(self, arg):
+            return arg
+  ```
+  
+- State attribute returns DevStates instance
+ 
+  ```python
+  >>> dev = tango.DeviProxy('sys/tg_test/1')
+  >>> dev.State()
+  tango._tango.DevState.RUNNING
+  >>> type(dev.State)
+  <class 'tango._tango.DevState'>
+  ```
+
+  Additionally, there was an option added to create attribute with DevState as dtype, e.g.:
+  ```python
+  @attribute(dtype=(DevState,), access=AttrWriteType.READ, max_dim_x=2)
+  ```
+  
+- New attribute decorators
+  ```python
+  @<attribute>.getter
+
+  @<attribute>.read
+
+  @<attribute>.is_allowed
+  ```
+  
+  ```python
+  class TestDevice(Device):
+
+    set_voltage = attribute(dtype=float, access=AttrWriteType.READ_WRITE)
+  
+    @set_voltage.read
+    def get_set_voltage(self):
+        return SMU.get_set_voltage()
+  
+    @set_voltage.write
+    def set_new_voltage(self, new_voltage):
+        SMU.set_voltage(new_voltage)
+  
+    @set_voltage.is_allowed
+    def can_voltage_be_changed(self, req_type):
+        if req_type == AttReqType.WRITE_REQ:
+            return not SMU.is_ouput_on()
+        return True
+  
+    monitored_voltage = attribute(dtype=float)
+  
+    @monitored_voltage.getter
+    def current_voltage(self):
+        return SMU.get_current_voltage()
+  ```
+  
+- Developers can optionally allow Python attributes to be added to a `DeviceProxy` instance
+  by calling `DeviceProxy.unfreeze_dynamic_interface`
+
+  ```python
+  >>> dev = tango.DeviProxy('sys/tg_test/1')
+  >>> dev.test_attribute = "a"
+  Traceback (most recent call last):
+    File "/home/matveyev/pytango/tango/device_proxy.py", line 508, in __DeviceProxy__setattr
+      raise e from cause
+    File "/home/matveyev/pytango/tango/device_proxy.py", line 502, in __DeviceProxy__setattr
+      raise AttributeError(
+  AttributeError: Tried to set non-existent attr 'test_attribute' to 'a'.
+  The DeviceProxy object interface is frozen and cannot be modified - 
+  see tango.DeviceProxy.freeze_dynamic_interface for details.
+    
+  >>> dev.unfreeze_dynamic_interface()
+  /home/matveyev/pytango/tango/device_proxy.py:311: UserWarning: 
+  Dynamic interface unfrozen on DeviceProxy instance TangoTest(sys/tg_test/1) 
+  id=0x7fec1ea137c0 - arbitrary Python attributes can be set without raising an exception.
+
+  >>> dev.test_attribute = "a"
+  >>> dev.test_attribute
+  'a'
+  ```
+           
+---
+
+- 38 MRs in total - https://gitlab.com/tango-controls/pytango/-/releases/v9.4.0
 - Packages:
   - Source on PyPI
   
   - Windows binary wheels on PyPI
-      - Python 2.7, 3.6, 3.7, 3.8 (32-bit + 64-bit)
-      - cppTango 9.3.4
+      - Python 3.6, 3.7, 3.8, 3.9, 3.10, 3.11 (32-bit + 64-bit)
+      - cppTango 9.4.1
 
   - Conda binary (`pytango` on `conda-forge` channel)
       - Python 3.7, 3.8, 3.9 and 3.10
       - Linux (x86_64) and Windows (64-bit)
-      - cppTango 9.3.5
+      - cppTango 9.4.1
 
 ---
 
-### Features/Changes
+### DevOps Changes
 
-- Raise when setting non-existent DeviceProxy attr ([!430](https://gitlab.com/tango-controls/pytango/-/merge_requests/430))
+- Run ruff via pre-commit
 
-```python
->>> proxy = tango.DeviceProxy("test/my/clock")
->>> proxy.get_attribute_list()
-['time', 'gmtime', 'noon', 'display', 'State', 'Status']
+  Python linter, which supports over 500 lint rules, many of which are inspired by popular tools like Flake8, isort, pyupgrade, and others
 
->>> proxy.display_mode = "DIGITAL"
-Traceback (most recent call last):
-  File "<stdin>", line 1, in <module>
-  File "/opt/conda/envs/env-py3.8-tango9.3.4/lib/python3.8/site-packages/tango/device_proxy.py", line 418, in __DeviceProxy__setattr
-    six.raise_from(e, cause)
-  File "<string>", line 3, in raise_from
-  File "/opt/conda/envs/env-py3.8-tango9.3.4/lib/python3.8/site-packages/tango/device_proxy.py", line 413, in __DeviceProxy__setattr
-    raise AttributeError(
-AttributeError: Tried to set non-existent attr 'display_mode' to 'DIGITAL'
-```
-
----
-### Features/Changes
-
-- Add “friendly” argparser for device server arguments ([!444](https://gitlab.com/tango-controls/pytango/-/merge_requests/444))
-
-Before:
-```
-user@host:/pytango/examples/Clock# python ClockDS.py --help
-usage :  Clock instance_name [-v[trace level]] [-file=<file_name> | -nodb [-dlist <device name list>] ]
-```
-
-After:
-```
-user@host:/pytango/examples/Clock# python ClockDS.py --help
-usage: Clock instance_name [-v[trace level]] [-host] [-port] [-file=<file_name> | -nodb [-dlist]]
-
-...
-```
-
----
-After:
-```
-user@host:/pytango/examples/Clock# python ClockDS.py --help
-usage: Clock instance_name [-v[trace level]] [-host] [-port] [-file=<file_name> | -nodb [-dlist]]
-
-Instance names defined in database for server Clock:
-	bar
-	foo
-	test
-
-positional arguments:
-  instance_name         Device server instance name
-
-optional arguments:
-  -h, -?, --help        show this help message and exit
-  -v, --verbose         set the trace level. Can be used in count way: -vv or
-                        --verbose --verbose
-  -vLEVEL               directly set the trace level to LEVEL
-  -file FILE_PATH, --file FILE_PATH
-                        start device server using an ASCII file instead of the
-                        Tango database
-  -host HOST, --host HOST
-                        Force the host from which server accepts requests
-                        (alternatively use ORBendPoint option)
-  -port PORT, --port PORT
-                        Force the port on which the device server listens
-                        (alternatively use ORBendPoint option)
-
-Run device server without database:
-  -nodb, --nodb         run server without DB
-  -dlist DEV1,DEV2,etc, --dlist DEV1,DEV2,etc
-                        The device name list. This option is supported only
-                        with the -nodb option.
-
-ORB options (started with -ORBxxx):options directly passed to the underlying ORB. Should be rarely used:
-  -ORBendPoint giop:tcp:<host>:<port>, --ORBendPoint giop:tcp:<host>:<port>
-                        Specifying the host from which server accept requests
-                        and port on which the device server listens.
-  -ORB<any_another_option> giop:tcp:<host>:<port>, --ORB<any_another_option> giop:tcp:<host>:<port>
-                        Any another ORB option
-```
-
----
-### Bug fixes
-
-- Fix read/write/is_allowed not called for dynamic attribute in async mode server ([!401](https://gitlab.com/tango-controls/pytango/-/merge_requests/401))
-
-- Fix Device green_mode usage in MultiDeviceTestContext ([!434](https://gitlab.com/tango-controls/pytango/-/merge_requests/434))
-
-- Fix DeviceProxy constructor reference cycle ([!417](https://gitlab.com/tango-controls/pytango/-/merge_requests/417))
-
-- Release GIL in DeviceProxy and AttributeProxy dtor ([!418](https://gitlab.com/tango-controls/pytango/-/merge_requests/418))
-
-- Allow pipes to be inherited by Device subclasses ([!446](https://gitlab.com/tango-controls/pytango/-/merge_requests/446))
----
+- pyproject.toml to force numpy installation before build (PEP 518) 
 
 ### Contributors - thanks!
 
-Alberto López Sánchez, Alejandro Homs Puron, Antonio Bartalesi, Benjamin Bertrand, Blaise Thompson, 
-Dantali0n, Emilio Morales, Gavin Burnell, Marc Espín, Mateusz Celary, Yury Matveyev, Stanislaw Cabala,
-Thomas Braun, Valentin Valls, Zbigniew Reszela
+  Anton Joubert, Benjamin Bertrand, Drew Devereux, Jan David Mol, Jean-Luc PONS, Nicolas Leclercq, Thomas Braun, Vincent Michel, Yury Matveyev
 ---
 name: upcoming
 layout: true
 
-Upcoming release - 9.4.0
+Upcoming release - 9.4.2
 ========================
 
 ---
 
 ### Changes
 
-- Drop support for cppTango 9.3.x and add support for cppTango 9.4.x
+- Implementation of Python and NumPy version policy
+- 
+  Supported versions are determined based on each PyTango release's anticipated release date, as follows:
 
-- C++14 compiler required (for source distribution)
+  1. All minor versions of Python released 42 months prior to that date, and at minimum the two latest minor versions.
+  2. All minor versions of NumPy released at that date that meet the requirements in oldest-supported-numpy for the corresponding Python version and platform.
 
-- Drop support for Python 2.7 and 3.5
+  As Python minor versions are released annually, this means that PyTango will drop support for the oldest minor Python version every year, and also gain support for a new minor version every year.
 
-- Breaking change for spectrum and image attributes
+For example, a 9.4.2 PyTango release would support:
 
-- Require numpy
+| Python | Platform | NumPy    |
+|--------| --- |----------|
+| 3.9    | x86_64, win_amd64, win32, aarch64 | >=1.19.3 |
+| 3.9    | arm64 (macOS) | >=1.21.0 |
+| 3.10   | x86_64, win_amd64, win32, aarch64, arm64 | >=1.21.6 |
+| 3.11   | x86_64, win_amd64, win32, aarch64, arm64 | >=1.23.2 |
 
-- Aim for release in November 2022 - closely following cppTango 9.4.0 release
+- Fix DevEncoded attributes and commands
 
----
-### Breaking change to attributes
+  The origin of these problems is that for DevEncoded attributes we passed data as a ref, 
+  but we do not notify python's garbage collector, that object is still needed, 
+  so it deallocates memory as soon as we get out of scope. 
+  If we send a small data - it just may result in corrupted data
+  but if data > 1 Mb and memory was allocated from heap - we get instantly segfault
+  
+  So we decided to implement data copying also for DevEncoded attributes. 
+  It will affect performance, when somebody will try to send big dataset, but make it reliable.
 
-- Read/writing empty list produces `None` for spectrum and image attributes ([#229](https://gitlab.com/tango-controls/pytango/-/issues/229), [#230](https://gitlab.com/tango-controls/pytango/-/issues/230) from 2018)
+  Also DevEncoded commands and attributes made symmetrical: we can write/read str, bytes and bytesarray.
+  
+  Strings are decoded as utf-8!
+  
+- Asyncio server doesn't change state to ALARM with AttrQuality fixed
 
-```python
-class Test(Device):
-    value = []
-
-    @attribute(dtype=(int,), max_dim_x=10, access=AttrWriteType.READ)
-    def test_read_only(self):
-        return []
-    
-    @attribute(dtype=(int,), max_dim_x=10, access=AttrWriteType.READ_WRITE)
-    def test_read_write(self):
-        return self.value
-
-    @test_read_write.write
-    def test_read_write(self, value):
-        self.value = value
-```
-
-```python
-In [1]: d = Device('my/test/device')
-In [2]: str(d.test_read_only)
-Out[2]: 'None'  # but changing it to be '[]'
-In [3]: str(d.test_read_write)
-Out[3]: '[]'
-In [4]: d.test_read_write = []
-In [5]: str(d.test_read_write)
-Out[5]: 'None'  # but changing it to be '[]'
-```
+- Raise UnicodeError instead of segfaulting when Latin-1 encoding fails
 
 ---
 
@@ -292,27 +385,6 @@ musl libc - maybe later.
 
 name: compatibility
 layout: true
-
-Python version policy
-=============
-
----
-
-Python 3.x is moving quickly, when do we drop support for old versions?  Examples:
-
-- Numpy uses [NEP-29](https://numpy.org/neps/nep-0029-deprecation_policy.html)
-- Scikit-HEP (high energy physics) [statement](https://scikit-hep.org/supported-python-versions) 
-- Python version in current and previous Debian and Red Hat releases
-
-.centre[<img src="images/python_history.png" height="400">]
-
-[//]: # (https://en.wikipedia.org/wiki/Red_Hat_Enterprise_Linux#Product_life_cycle)
-
-[//]: # (https://en.wikipedia.org/wiki/CentOS)
-
-[//]: # (https://en.wikipedia.org/wiki/Debian_version_history)
-
-[//]: # (https://wiki.debian.org/Python)
 
 ---
 
