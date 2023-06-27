@@ -10,11 +10,12 @@ PyTango Status Report
 
 [Anton Joubert](https://gitlab.com/ajoubertza) ([MAX IV](https://www.maxiv.lu.se))
 
-36th Tango Community Meeting
 
-29-30 June 2022
+37th Tango Community Meeting
 
-Lund, Sweden
+27-29 June 2023
+
+SKAO at Jodrell Bank, Cheshire UK
 
 *
 
@@ -26,19 +27,44 @@ Slides: [https://ajoubertza.github.io/pytango-status-updates/](https://ajoubertz
 
 
 ---
-name: team
+name: ack
 layout: true
 
-New PyTango team member
-=======================
+Acknowledgments
+===============
 
 ---
 
-Welcome to our new team member from DESY!
+Co-maintainer, and contributor to these slides:
 
-.center[<img src="images/ulrik_gitlab.png" width="300">]
+[Yury Matveyev](https://gitlab.com/yamatveyev) ([DESY](https://www.desy.de))
 
-.center[<img src="images/jose_gitlab.png" width="300">]
+---
+name: team
+layout: true
+
+Growing the team
+================
+
+---
+
+Regular attendees of our developers' meetings, which started in September 2022:
+
+- Jose Antonio Ramos Andrades (ALBA)
+- Benjamin Bertrand (MAX IV)
+- Mateusz Celary (S2Innovation)
+- Anton Joubert (MAX IV)
+- Thomas Juerges (SKAO)
+- Yury Matveev (DESY)
+- Jairo Moldes Fuentes (ALBA)
+- Mateusz Nabywaniec (S2Innovation)
+- Ulrik Pedersen (Observatory Sciences, SKAO)
+
+We meet twice a month - 1st and 3rd Thursdays.  15:00 to 16:00 CET/CEST.
+
+Join the `#pytango` channel on [Tango Controls Slack](https://tango-controls.slack.com/archives/C034P7HLE3U).
+
+Previous meeting minutes: https://gitlab.com/tango-controls/meeting-minutes/pytango
 
 ---
 name: presentation
@@ -57,9 +83,9 @@ PyTango?  Quick reminder
 
 - Relies on numpy
 
-- Multi OS: Linux, Windows, MacOS (sort-of)
+- Multi OS: Linux, Windows and macOS
 
-- Works on Python 2.7, 3.5 to 3.10
+- Python 3.6 to 3.11 (next release 3.9 to 3.11)
 
 .center[<img src="images/pytango_sw_stack.png" width="400">]
 
@@ -72,104 +98,139 @@ layout: true
 Current release - 9.4.1
 ==============
 
-###  March 2022
+###  March 2023
 
-#### "Emergency" release to fix breaking change in 9.4.0:
-- Regression for undecorated read attribute accessor functions in derived device classes
-- Regression when applying additional decorators on attribute accessor functions
+#### "Emergency" release to fix regressions in 9.4.0:
+- Regression when applying additional decorators on attribute accessor functions.
+- Regression for undecorated read attribute accessor functions in device subclasses.
 
-- Now all method's signatures should be the same for bounded and non-bounded methods:
+- Consistent method's signatures for bound and non-bound methods:
+  - static Tango attributes:
+     - `read_my_attribute(self: MyDevice)`
+     - `write_my_attribute(self: MyDevice, value)`
 
-  - static attributes:
-   
-  read_attribute(device_instance)
+  - dynamic Tango attributes:
+     - `read_my_attribute(self: MyDevice, attribute: Attribute | WAttribute)`
+     - `write_my_attribute(self: MyDevice, attribute: WAttribute)`
 
-  write_attribute(device_instance, value)
+---
+### Migration guide
 
-  - dynamic attributes:
-  
-  read_attribute(device_instance, attribute)
+See the new [migration guide](https://pytango.readthedocs.io/en/stable/migration/index.html) for the details of moving to 9.4.x
 
-  write_attribute(device_instance, attribute)
-
-### DevOps Changes
-
-- Run black on repo and add to pre-commit-config
-  
-  Python code formatter
+.center[<img src="images/pytango_migration_guide.png" width="600">]
 
 ---
 Previous release - 9.4.0
 ==============
 
-###  February 2022
+###  February 2023
 
-#### Now mark as "stale". Major release with API breaking changes.
+#### Major release with breaking API changes
 
-- Python 3.11 support.
-- Support for Python 2 and Python 3.5 was removed
-- PyTango requires at least cppTango 9.4.1
+#### Use 9.4.1, not 9.4.0!  Marked as "yanked" on PyPI.org
+
+Support:
+
+- Python 3.11 added.
+- Python 2.7 and Python 3.5 removed.
+- Requires at least cppTango 9.4.1.
 - Python dependencies:  numpy is no longer optional - it is required.
-- MacOS support
+- macOS!
 
+---
 ### Bug fixes
-- Breaking change to the API when using empty spectrum and image attributes. 
-
-  Clients reading an empty
-  attribute will get an empty sequence (list/tuple/numpy array) instead of a `None` value.  Similarly,
-  devices that have an empty sequence written will receive that in the write method instead of a `None`
-  value.
-
-- Keep value and w_value separate
-
-  Prior to 9.4.x, the data in the tango.DeviceAttribute value and w_value fields would be concatenated (respectively) 
-  and returned in the value field. For a read-only attributes this was reasonable, but not for read-write attributes.
 
 - Writing a `numpy.array` to a spectrum attribute of type `str` no longer crashes.
-- Reading an enum attribute with `AttrQuality.ATTR_INVALID` quality via the high-level API now returns `None` instead of crashing.
 
-- High-level API support for DevEnum spectrum and image attributes
-  
-- Broken logging with “%” fixed
+- Reading an enum attribute with `AttrQuality.ATTR_INVALID` quality via the high-level API now returns `None` instead of crashing.
+ 
+- Fixed logging with `%` in the log string and zero arguments.
 
 ---
 
 ### Features/Changes
 
-- Added fisallowed kwarg for static/dynamic commands and is_allowed method for dynamic commands
+- Breaking change to the API when using empty spectrum and image attributes: 
 
-  ```python
-    class TestDevice(Device):
+  - Clients reading an empty
+  attribute will get an empty sequence (list/tuple/numpy array) instead of a `None` value.
+  - Devices that have an empty sequence written will receive it in the write method instead of a `None`
+  value.
 
-        def __init__(self, *args, **kwargs):
-            super(TestDevice, self).__init__(*args, **kwargs)
-            self._is_allowed = True
+  - Keep `value` and `w_value` separate when reading attributes:
 
-        @command(dtype_in=int, dtype_out=int)
-        def identity(self, arg):
-            return arg
+     - Prior to 9.4.x, the data in the `tango.DeviceAttribute` `value` and `w_value` fields would be concatenated 
+     and returned in the `value` field. For a read-only attributes this was reasonable, but not for read-write attributes.
 
+- High-level API support for `DevEnum` spectrum and image attributes.
+
+---
+
+- Added `fisallowed` kwarg for static/dynamic commands and `is_allowed` method for dynamic commands
+
+```python
+    from tango.server import Device, command
+
+    class MyDevice(Device):
+        _is_allowed = True
 
         @command(dtype_in=int, dtype_out=int, fisallowed="is_identity_allowed")
         def identity_kwarg_string(self, arg):
             return arg
 
         def is_identity_allowed(self):
-                return self._is_allowed
+            return self._is_allowed
   ```
-  
-  ```python
-    def non_bound_sync_allowed():
-        return is_allowed
-      
-    class TestDevice(Device):
-        
-        @command(dtype_in=int, dtype_out=int, fisallowed=non_bound_sync_allowed)
-        def identity_kwarg_callable(self, arg):
-            return arg
-  ```  
+---
+
+- Non-bound attribute accessor and `is_allowed` functions:
 
   ```python
+    from tango import AttrWriteType, AttReqType
+    from tango.server import Device, command, attribute
+
+    global_data = {"example_attr1": 100}
+
+    def read_example_attr1(device):
+        print(f"read from device {device.get_name()}")
+        return global_data["example_attr1"]
+
+    def write_example_attr1(device, value):
+        print(f"write to device {device.get_name()}")
+        global_data["example_attr1"] = value
+
+    def is_example_attr1_allowed(device, req_type):
+        print(f"is_allowed attr for device {device.get_name()}")
+        assert req_type in (AttReqType.READ_REQ, AttReqType.WRITE_REQ)
+        return True
+
+    def is_cmd1_allowed(device):
+        print(f"is_allowed cmd for device {device.get_name()}")
+        return True
+
+    class MyDevice(Device):
+        example_attr1 = attribute(
+            fget=read_example_attr1,
+            fset=write_example_attr1,
+            fisallowed=is_example_attr1_allowed,
+            dtype=int,
+            access=AttrWriteType.READ_WRITE
+        )
+
+        @command(dtype_in=int, dtype_out=int, fisallowed=is_cmd1_allowed)
+        def identity1(self, value):
+            return value
+
+  ```  
+
+---
+Callable classes are also supported:
+
+  ```python
+    from tango.server import Device, command
+
+
     class IsAllowedCallableClass:
 
         def __init__(self):
@@ -181,31 +242,54 @@ Previous release - 9.4.0
         def make_allowed(self, yesno):
             self._is_allowed = yesno
 
-    is_allowed_callable_class = IsAllowedCallableClass()
-      
-    class TestDevice(Device):
+            
+    is_allowed_callable = IsAllowedCallableClass()
+
+    
+    class MyDevice(Device):
         
-        @command(dtype_in=int, dtype_out=int, fisallowed=is_allowed_callable_class)
+        @command(dtype_in=int, dtype_out=int, fisallowed=is_allowed_callable)
         def identity_kwarg_callable_class(self, arg):
             return arg
   ```
-  
-- State attribute returns DevStates instance
- 
+
+---
+
+- Can create attribute with `DevState` as `dtype` instead of literal `"state"`, e.g.:
   ```python
-  >>> dev = tango.DeviProxy('sys/tg_test/1')
-  >>> dev.State()
-  tango._tango.DevState.RUNNING
-  >>> type(dev.State)
-  <class 'tango._tango.DevState'>
+  @attribute(dtype=DevState, access=AttrWriteType.READ)
   ```
 
-  Additionally, there was an option added to create attribute with DevState as dtype, e.g.:
-  ```python
-  @attribute(dtype=(DevState,), access=AttrWriteType.READ, max_dim_x=2)
-  ```
+- Spectrum/image attributes of `DevState` return `DevState` instances instead of integers:
+
+    ```python
+    from tango import DevState
+    from tango.server import Device, attribute
+    
+    class MyDevice(Device):
+        @attribute(dtype=(DevState,), max_dim_x=2)
+        def my_states(self):
+            return [DevState.ON, DevState.OFF]
+    
+    if __name__ == "__main__":
+        MyDevice.run_server()  
+    ```  
+
+    ```python
+    # old
+    >>> dev = tango.DeviceProxy("my/test/device")
+    >>> dev.my_states
+    array([0, 1], dtype=uint32)
+    ```
+    ```python
+    # new
+    >>> dev = tango.DeviceProxy("my/test/device")
+    >>> dev.my_states
+    (tango._tango.DevState(0), tango._tango.DevState(1))
+    ```
   
-- New attribute decorators
+---
+- New attribute decorators for better symmetry with `@<attribute>.setter` and `@<attribute>.write`:
   ```python
   @<attribute>.getter
 
@@ -213,38 +297,40 @@ Previous release - 9.4.0
 
   @<attribute>.is_allowed
   ```
-  
+Example:
   ```python
-  class TestDevice(Device):
+    class MyDevice(Device):
 
-    set_voltage = attribute(dtype=float, access=AttrWriteType.READ_WRITE)
-  
-    @set_voltage.read
-    def get_set_voltage(self):
-        return SMU.get_set_voltage()
-  
-    @set_voltage.write
-    def set_new_voltage(self, new_voltage):
-        SMU.set_voltage(new_voltage)
-  
-    @set_voltage.is_allowed
-    def can_voltage_be_changed(self, req_type):
-        if req_type == AttReqType.WRITE_REQ:
-            return not SMU.is_ouput_on()
-        return True
-  
-    monitored_voltage = attribute(dtype=float)
-  
-    @monitored_voltage.getter
-    def current_voltage(self):
-        return SMU.get_current_voltage()
+        set_voltage = attribute(dtype=float, access=AttrWriteType.READ_WRITE)
+        
+        @set_voltage.read
+        def get_set_voltage(self):
+            return SMU.get_set_voltage()
+        
+        @set_voltage.write
+        def set_new_voltage(self, new_voltage):
+            SMU.set_voltage(new_voltage)
+        
+        @set_voltage.is_allowed
+        def can_voltage_be_changed(self, req_type):
+            if req_type == AttReqType.WRITE_REQ:
+                return not SMU.is_ouput_on()
+            return True
+        
+        monitored_voltage = attribute(dtype=float)
+        
+        @monitored_voltage.getter
+        def current_voltage(self):
+            return SMU.get_current_voltage()
   ```
-  
+---
+
+- (Since 9.3.4, exceptions raised for non-existent Tango attributes via `DeviceProxy`.)
 - Developers can optionally allow Python attributes to be added to a `DeviceProxy` instance
-  by calling `DeviceProxy.unfreeze_dynamic_interface`
+  by calling `DeviceProxy.unfreeze_dynamic_interface()`
 
   ```python
-  >>> dev = tango.DeviProxy('sys/tg_test/1')
+  >>> dev = tango.DeviceProxy('sys/tg_test/1')
   >>> dev.test_attribute = "a"
   Traceback (most recent call last):
     File "/home/matveyev/pytango/tango/device_proxy.py", line 508, in __DeviceProxy__setattr
@@ -264,35 +350,63 @@ Previous release - 9.4.0
   >>> dev.test_attribute
   'a'
   ```
-           
----
-
-- 38 MRs in total - https://gitlab.com/tango-controls/pytango/-/releases/v9.4.0
-- Packages:
-  - Source on PyPI
-  
-  - Windows binary wheels on PyPI
-      - Python 3.6, 3.7, 3.8, 3.9, 3.10, 3.11 (32-bit + 64-bit)
-      - cppTango 9.4.1
-
-  - Conda binary (`pytango` on `conda-forge` channel)
-      - Python 3.7, 3.8, 3.9 and 3.10
-      - Linux (x86_64) and Windows (64-bit)
-      - cppTango 9.4.1
-
 ---
 
 ### DevOps Changes
 
-- Run ruff via pre-commit
+- Run *ruff* Python linter via pre-commit and in CI.
 
-  Python linter, which supports over 500 lint rules, many of which are inspired by popular tools like Flake8, isort, pyupgrade, and others
+- Use `pyproject.toml` to force numpy installation before build (PEP 518).
 
-- pyproject.toml to force numpy installation before build (PEP 518) 
+- Fix AppVeyor (Windows) compilation with cppTango 9.4.0.
 
-### Contributors - thanks!
+### Other
 
-  Anton Joubert, Benjamin Bertrand, Drew Devereux, Jan David Mol, Jean-Luc PONS, Nicolas Leclercq, Thomas Braun, Vincent Michel, Yury Matveyev
+- Many doc fixes, clarifications and some improved examples.
+
+- Improve `Device` class autocompletion in IDEs.
+
+---
+
+### Packages for 9.4.1
+  - Source on PyPI
+  
+  - Binary wheels on PyPI
+      - contain cppTango 9.4.1, omniorb, zmq, etc.
+      - Windows:
+         - Python 3.6 to 3.11 (32-bit, 64-bit)
+      - Linux:
+         - Python 3.6 to 3.11 (x86_64, i686, aarch64*)
+      - macOS:
+          - Python 3.9 to 3.11 (x86_64, arm64)
+
+  - Conda binary (`pytango` on `conda-forge` channel)
+      - Python 3.8 to 3.11
+      - Linux (x86_64, aarch64), Windows (64-bit), macOS (x86_64, arm64)
+      - cppTango 9.4.1
+    
+`*` aarch64 reports of two bugs in this release, related to omniORB.
+
+More details in [yesterday's talk on packaging](https://indico.tango-controls.org/event/57/contributions/812/).
+
+---
+### Summary
+- 38 MRs in total - https://gitlab.com/tango-controls/pytango/-/releases/v9.4.0
+- 13 MRs in total - https://gitlab.com/tango-controls/pytango/-/releases/v9.4.1
+
+### Contributors since last year - thanks!
+
+Anton Joubert,
+Antonio Bartalesi,
+Benjamin Bertrand,
+Jairo Moldes,
+Mateusz Celary,
+Michal Liszcz,
+Reynald Bourtembourg,
+Thomas Juerges,
+Ulrik Pedersen,
+Yury Matveyev.
+
 ---
 name: upcoming
 layout: true
@@ -304,87 +418,79 @@ Upcoming release - 9.4.2
 
 ### Changes
 
-- Implementation of Python and NumPy version policy
-- 
-  Supported versions are determined based on each PyTango release's anticipated release date, as follows:
+Implementation of our new [Python and NumPy version policy](https://pytango.readthedocs.io/en/latest/version-policy.html).
 
-  1. All minor versions of Python released 42 months prior to that date, and at minimum the two latest minor versions.
-  2. All minor versions of NumPy released at that date that meet the requirements in oldest-supported-numpy for the corresponding Python version and platform.
+*Supported versions are determined based on each PyTango release's anticipated release date, as follows:*
 
-  As Python minor versions are released annually, this means that PyTango will drop support for the oldest minor Python version every year, and also gain support for a new minor version every year.
+      1. All minor versions of Python released 42 months (3.5 years) prior to that date, and at minimum the two latest minor versions.
+      2. All minor versions of NumPy released at that date that meet the requirements in oldest-supported-numpy
+         for the corresponding Python version and platform.
+As Python minor versions are released annually, this means that PyTango will drop support for the oldest minor Python version every year, and also gain support for a new minor version every year.
 
-For example, a 9.4.2 PyTango release would support:
-
-| Python | Platform | NumPy    |
-|--------| --- |----------|
-| 3.9    | x86_64, win_amd64, win32, aarch64 | >=1.19.3 |
-| 3.9    | arm64 (macOS) | >=1.21.0 |
-| 3.10   | x86_64, win_amd64, win32, aarch64, arm64 | >=1.21.6 |
-| 3.11   | x86_64, win_amd64, win32, aarch64, arm64 | >=1.23.2 |
-
-- Fix DevEncoded attributes and commands
-
-  The origin of these problems is that for DevEncoded attributes we passed data as a ref, 
-  but we do not notify python's garbage collector, that object is still needed, 
-  so it deallocates memory as soon as we get out of scope. 
-  If we send a small data - it just may result in corrupted data
-  but if data > 1 Mb and memory was allocated from heap - we get instantly segfault
-  
-  So we decided to implement data copying also for DevEncoded attributes. 
-  It will affect performance, when somebody will try to send big dataset, but make it reliable.
-
-  Also DevEncoded commands and attributes made symmetrical: we can write/read str, bytes and bytesarray.
-  
-  Strings are decoded as utf-8!
-  
-- Asyncio server doesn't change state to ALARM with AttrQuality fixed
-
-- Raise UnicodeError instead of segfaulting when Latin-1 encoding fails
+.center[<img src="images/python_version_history_2023_pytango_942.png" height="200">]
 
 ---
 
-name: platforms
+- Fix `DevEncoded` attributes and commands crashes and inconsistency:
+
+  Attributes had a problem with incorrect reference counting and Python's garbage collector.
+  Small data might work, but could also be corrupted.  Data > 1MB would segfault.
+  
+  Solution was to implement data copying for `DevEncoded` attributes, similar to numpy arrays. 
+  It may affect performance when sending large datasets, but reliability is more important.
+
+  Commands and attributes API now more consistent: we can write/read str, bytes and bytesarray.
+  
+  `DevEncoded` data as `str` are decoded as utf-8, not latin-1.
+  
+- Fixed asyncio server device `State` not changing to ALARM based on attribute `AttrQuality`.
+
+- Raise `UnicodeError` instead of segfaulting when latin-1 encoding fails.
+
+- Fix source location recorded by logging decorators.
+
+- Added CI job to test main cpptango branch weekly.
+
+- Include cppTango 9.4.2 in binary wheels.
+
+---
+
+name: future
 layout: true
 
-Platform Survey
-=============
+Future improvements
+===================
 
 ---
 
-Which platforms do you use PyTango on? [28 responses]
+- Type hints for declaring attributes, command and properties.  Under consideration:
 
-.centre[<img src="images/survey_platforms_used.png" height="400">]
----
+    ```python
+        host: str = device_property()
+  
+        @command
+        def set_and_get_voltage(self, voltage_to_set: float) -> float:
+            hardware.set_voltage(voltage_to_set)
+            return hardware.get_voltage()
+  
+        voltage: float = attribute()
+  
+        def read_voltage(self):
+            return 12.3
+    
+        current = attribute()
+    
+        def read_current(self) -> float:
+            return 10.5
+    ```
 
-Which platforms would you like PyTango binary wheels for? [28 responses]
+- Documentation improvements, after the "write-the-docs" workshop.
 
-.centre[<img src="images/survey_platforms_binary_wheels.png" height="400">]
+- Add `server_init_hook` method to `Device`.
 
----
+- Explict `AsyncioDevice` class with `async def` methods instead of `green_mode=Asyncio`?
 
-Are you interested in musl libc support (used in Alpine Docker images instead of libc) [27 responses]
-
-.centre[<img src="images/survey_musl_support.png" height="300">]
-
----
-### Binary wheels on PyPI?
-
-Initial goal:
-
-.centre[<img src="images/binary_wheels_planned.png" height="200">]
-
-ABI for Python 3.7: `m`
-
-Skipping Python 3.6, end-of-life was 2021-12-23.
-
-If MacOS works, include Intel and Apple Silicon, from Python 3.8.
-
-musl libc - maybe later.
-
----
-
-name: compatibility
-layout: true
+- Support for cppTango 10.0 with IDLv6, and hopefully [OpenTelemetry](https://opentelemetry.io/docs/) tracing.
 
 ---
 
@@ -398,32 +504,46 @@ PyTango development
 
 ### Hosting
 
-- Repo: [gitlab.com/tango-controls/pytango](https://gitlab.com/tango-controls/pytango)
+- Repo: [gitlab.com/tango-controls/pytango](https://gitlab.com/tango-controls/pytango).
 
-- Docs: [pytango.readthedocs.io](https://pytango.readthedocs.io)
+- Docs: [pytango.readthedocs.io](https://pytango.readthedocs.io).
 
-- Continuous Integration:  GitLab CI (Miniconda Docker container), AppVeyor
+- Continuous Integration:  GitLab CI (Micromamba Docker container), AppVeyor.
 
-- Windows packages:  AppVeyor
+- Windows packages:  AppVeyor.
+
+### Release cycle
+
+- At least twice per year.
+
+- Aim for release within 1 month of cppTango releases.
+
+- Release candidates are published - please help us test with your CI!
+
+- Conda Forge packages are sometimes rebuilt to fix problems in dependencies.
+
+---
 
 ### Issues
 
-- Questions:  use the [TANGO Forum](https://www.tango-controls.org/community/forum/c/development/python)
+- Questions:  use the [TANGO Forum](https://www.tango-controls.org/community/forum/c/development/python).
 
 - Specific issues:  report on [GitLab](https://gitlab.com/tango-controls/pytango/-/issues) - the more detail the better
+  (ideally, example code).
 
----
 
 ### Contributing
 
 - Please join in!
+
+- Developers' meeting twice a month.
 
 - Typical branched Git workflow.  Main branch is `develop` (may change to `main` in future)
 
 - Fork the repo, make it better, make an MR.  Thanks!
 
 - More info in [how-to-contribute](https://pytango.readthedocs.io/en/latest/how-to-contribute.html),
-  and the not so recent [webinar](https://www.tango-controls.org/community/news/2021/06/10/4th-tango-kernel-webinar-pytango/)
+  and the not so recent [webinar](https://www.tango-controls.org/community/news/2021/06/10/4th-tango-kernel-webinar-pytango/).
 
 ---
 name:  done
